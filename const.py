@@ -1,0 +1,13 @@
+#mssgtype
+DISCOVERY = 1
+CONFIRM_DISCOVERY = 2
+ACTION_PERFORMED = 3
+FORWARD_MSG = 4
+
+#action
+BLINK = 10
+BUZZ = 11
+
+#IP values
+UDP_IP = "localhost"
+RINGMASTER_PORT = 5000
