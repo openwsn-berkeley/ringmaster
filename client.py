@@ -1,7 +1,7 @@
 import socket
 import sys
 import const
-from utils import send_message_to_mote, create_mssg_packet
+from utils import send_message_to_mote, create_mssg_packet, print_packet
 
 MOTE_PORT = int(sys.argv[1])
 MESSAGE = "Mote " + str(MOTE_PORT) + " online"
@@ -28,7 +28,7 @@ def discover_ringmaster():
     discovered = False
     response = None
     while not discovered:
-        send_message_to_mote(const.RINGMASTER_PORT, create_mssg_packet(const.DISCOVERY, MOTE_PORT))
+        send_message_to_mote(const.RINGMASTER_PORT, create_mssg_packet(const.DISCOVERY, MOTE_PORT, const.RINGMASTER_PORT))
         response = wait_for_response(4)
         if response is not None:
             discovered = True
@@ -38,10 +38,18 @@ def handle_mssg(mssg):
     from_mote = int(data.split(',')[1])
     if (recvd_mssg == const.BLINK):
         blink_mote()
-    elif (recvd_msg == const.BUZZ):
+        send_message_to_mote(const.RINGMASTER_PORT, create_mssg_packet(const.ACTION_PERFORMED, MOTE_PORT, const.RINGMASTER_PORT, recvd_mssg))
+    elif (recvd_mssg == const.BUZZ):
         buzz_mote()
+        send_message_to_mote(const.RINGMASTER_PORT, create_mssg_packet(const.ACTION_PERFORMED, MOTE_PORT, const.RINGMASTER_PORT, recvd_mssg))
+    elif (recvd_mssg == const.FORWARD_MSG):
+        to_mote = int(data.split(',')[2])
+        action = int(data.split(',')[3])
+        mssg = create_mssg_packet(action, MOTE_PORT, to_mote)
+        send_message_to_mote(to_mote, mssg)
+				
+        
 
-    send_message_to_mote(const.RINGMASTER_PORT, create_mssg_packet(const.ACTION_PERFORMED, MOTE_PORT))
 
 
 def blink_mote():
@@ -62,8 +70,6 @@ discover_ringmaster()
 
 while True:
     data, addr = sock.recvfrom(1024) # buffer size is 1024 bytes
-    print "received message:", data
+    print_packet(data)
     handle_mssg(data)
-
-
 
