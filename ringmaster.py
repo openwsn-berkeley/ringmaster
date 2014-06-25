@@ -1,6 +1,5 @@
 import socket
 import const
-import select
 from utils import send_message_to_mote, create_mssg_packet, print_packet
 
 all_motes = []
@@ -55,6 +54,7 @@ def handle_packet_timeout(last_mssg_sent):
         retry_count += 1
         send_message_to_mote(mote_to, last_mssg_sent)
     else:
+        #TODO - handle this error case
         retry_count = 0
         
    

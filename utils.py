@@ -7,6 +7,8 @@ def create_mssg_packet(mssgtype, from_port, to_port=None, action_to_do=None):
     s = str(mssgtype)+","+str(from_port) + "," + str(to_port) + "," + str(action_to_do)
     return s
 
+def split_packet(packet):
+    return packet.split(',')
 
 def send_message_to_mote(mote_port, mssg):
     time.sleep(random.uniform(0.8, 3))
