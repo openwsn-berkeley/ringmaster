@@ -27,19 +27,24 @@ def advance_pointer():
         pointer = 0
 
 def handle_discovery(from_mote):
-    global last_mssg_sent
     if from_mote in all_motes:
-				return
+        confirm_discovery(from_mote)
+        return
     else:
         all_motes.append(from_mote)
         print all_motes
-        last_mssg_sent = create_mssg_packet(const.CONFIRM_DISCOVERY, const.RINGMASTER_PORT, from_mote)
-        send_message_to_mote(from_mote, last_mssg_sent)
+        confirm_discovery(from_mote)
         if len(all_motes) == 1: #means this was the first mote
             global pointer
             pointer = 0 #set pointer to first element in mote list
             send_instruction(from_mote)
        
+def confirm_discovery(from_mote):
+    #do not save to the last message
+    mssg = create_mssg_packet(const.CONFIRM_DISCOVERY, const.RINGMASTER_PORT, from_mote)
+    send_message_to_mote(from_mote, mssg)
+    
+
 def send_instruction(mote_port):
     global last_mssg_sent
     last_mssg_sent = create_mssg_packet(action, const.RINGMASTER_PORT, mote_port)
@@ -48,9 +53,12 @@ def send_instruction(mote_port):
 
 def handle_packet_timeout(last_mssg_sent):
     global retry_count
+    if (last_mssg_sent == None):
+        return
+
     mssg_sent = int(last_mssg_sent.split(',')[0])
     mote_to = int(last_mssg_sent.split(',')[2])
-    if (retry_count == 0):
+    if (retry_count < 5):
         retry_count += 1
         send_message_to_mote(mote_to, last_mssg_sent)
     else:
@@ -74,5 +82,5 @@ while True:
         handle_packet(from_mote, recvd_mssg)
     except Exception, e:
         print last_mssg_sent
-        #handle_packet_timeout(last_mssg_sent)
+        handle_packet_timeout(last_mssg_sent)
         print e
