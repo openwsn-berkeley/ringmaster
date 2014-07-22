@@ -24,7 +24,6 @@ def handle_packet(from_mote, recvd_mssg):
             last_mssg_sent = create_mssg_packet(const.FORWARD_MSG, const.RINGMASTER_PORT, next_mote, action)
             send_message_to_mote(from_mote,last_mssg_sent)
         else: #unexpected packet received
-            print "error"
             print "unexpected packet received from mote: " + str(from_mote) + " with message " + str(recvd_mssg) + ", expecting from: " + str(expecting_response_from)
 
 
@@ -62,7 +61,7 @@ def get_mote_flag(mote):
     return mote_flags[all_motes.index(mote)]
 
 def purge_mote(mote):
-    print "purging mote"
+    print "purging mote" + str(mote)
     mote_idx = all_motes.index(mote)
     del all_motes[mote_idx]
     del mote_flags[mote_idx]
@@ -93,8 +92,6 @@ def handle_packet_timeout(last_mssg_sent):
         return
     
     increase_mote_flag(mote_to)
-    print mote_to
-    print get_mote_flag(mote_to)
     if (get_mote_flag(mote_to) > 1): #TODO make a constant?
         purge_mote(mote_to)
     
