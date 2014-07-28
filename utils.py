@@ -18,7 +18,7 @@ def send_message_to_mote(mote_port, mssg):
     temp_sock.close()
 
 
-def print_packet(packet):
+def print_packet(packet, mssg = ""):
     mssgtype = int(packet.split(',')[0])
     from_mote = int(packet.split(',')[1])
     to_port = int(packet.split(',')[2])
@@ -34,14 +34,14 @@ def print_packet(packet):
         action_string = "buzz"
 
     if (mssgtype == const.DISCOVERY):
-        print "Sending discovery from mote " + str(from_mote)
+        print mssg + " Sending discovery from mote " + str(from_mote)
     elif (mssgtype == const.CONFIRM_DISCOVERY):
-        print "Confirming discovery of mote " + str(to_port) + " from ringmaster"
+        print mssg + " Confirming discovery of mote " + str(to_port) + " from ringmaster"
     elif (mssgtype == const.ACTION_PERFORMED):
-        print "Mote " + str(from_mote) + " performed action " + str(action_string)
+        print mssg + " Mote " + str(from_mote) + " performed action " + str(action_string)
     elif (mssgtype == const.FORWARD_MSG):
-        print "Forward action " + str(action_string) + " from " + str(from_mote) + " to " + str(to_port)
+        print mssg + " Forward action " + str(action_string) + " from " + str(from_mote) + " to " + str(to_port)
     elif (mssgtype == const.BLINK):
-        print "Make " + str(to_port) + " blink"
+        print mssg + " Make " + str(to_port) + " blink"
     elif (mssgtype == const.BUZZ):
-        print "Make " + str(to_port) + " buzz"
+        print mssg + " Make " + str(to_port) + " buzz"
