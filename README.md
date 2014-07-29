@@ -6,8 +6,7 @@ Start as many instances as you wish (each instance emulates a device)
 Break the chain by killing a process and observe what happens!
 
 TODO:
--reactoring + unit tests on ringmaster
--client as object
+-unit tests on ringmaster/client + integration tests
 -various error-handling strategies at ringmaster startup
 -moving simulation to CoAP
 
@@ -17,3 +16,5 @@ future:
 7/22
 ringmaster2 written in OOP
 
+7/28
+client as object
