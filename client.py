@@ -25,7 +25,7 @@ class Client:
 
         while True:
             data, addr = self.sock.recvfrom(1024) #buffer size is 1024 bytes
-            print_packet(data)
+            print_packet(data, "Received:")
             self.handle_mssg(data)
 
     def print_intro(self):

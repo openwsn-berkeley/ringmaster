@@ -1,6 +1,6 @@
 import socket
 import const
-from utils import send_message_to_mote, create_mssg_packet, print_packet, split_packet
+from utils import send_message_to_mote, create_mssg_packet, print_packet, split_packet, debug
 
 class Ringmaster:
     all_motes = []
@@ -35,7 +35,7 @@ class Ringmaster:
                 self.last_mssg_sent = create_mssg_packet(const.FORWARD_MSG, const.RINGMASTER_PORT, next_mote, self.action)
                 send_message_to_mote(from_mote,self.last_mssg_sent)
             else: #unexpected packet received
-                print "unexpected packet received from mote: " + str(from_mote) + " with message " + str(recvd_mssg) + ", expecting from: " + str(self.expecting_response_from)
+                print "unexpected packet received from mote: " + str(from_mote) + " with message " + str(mssgtype) + ", expecting from: " + str(self.expecting_response_from)
 
     def advance_pointer(self):
         if (len(self.all_motes) == 0):
@@ -62,6 +62,7 @@ class Ringmaster:
         self.mote_flags[self.all_motes.index(mote)] = 0
 
     def increase_mote_flag(self,mote):
+        debug("increasing mote " + str(mote))
         self.mote_flags[self.all_motes.index(mote)] += 1
      
     def get_mote_flag(self,mote):
@@ -83,8 +84,8 @@ class Ringmaster:
         
     def send_instruction(self,mote_port):
         self.expecting_response_from = mote_port
-        last_mssg_sent = create_mssg_packet(self.action, const.RINGMASTER_PORT, mote_port)
-        send_message_to_mote(mote_port, last_mssg_sent)
+        self.last_mssg_sent = create_mssg_packet(self.action, const.RINGMASTER_PORT, mote_port)
+        send_message_to_mote(mote_port, self.last_mssg_sent)
 
     def handle_packet_timeout(self):
         if (self.last_mssg_sent == None):
@@ -93,16 +94,21 @@ class Ringmaster:
         mssg_sent = int(self.last_mssg_sent.split(',')[0])
         mote_to = int(self.last_mssg_sent.split(',')[2])
 
+        debug(self.last_mssg_sent)
+
         if (mote_to not in self.all_motes):
             #TODO handle this case
             return
         
         self.increase_mote_flag(mote_to)
+        debug(self.all_motes)
+        debug(self.mote_flags)
         if (self.get_mote_flag(mote_to) > 1): #TODO make a constant?
             self.purge_mote(mote_to)
         
         self.advance_pointer()
         if (self.pointer == -1):
+            self.last_mssg_sent = None
             print "no motes registered, waiting"
         else:
             next_mote = self.all_motes[self.pointer]
@@ -117,7 +123,7 @@ class Ringmaster:
         while True:
             try:
                 data, addr = sock.recvfrom(1024) # buffer size is 1024 bytes
-                print_packet(data, "received message:")
+                print_packet(data, "Received:")
                 self.handle_incoming_packet(data)
             except Exception, e:
                 print e
