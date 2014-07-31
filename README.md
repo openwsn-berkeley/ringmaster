@@ -10,6 +10,7 @@ BUG:
 
 TODO (order of importance):
 -moving simulation to CoAP
+    -move cloent code to rrt resource
 -unit tests on ringmaster/client + integration tests
 -various error-handling strategies at ringmaster startup
 -queue for incoming packets?
