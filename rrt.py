@@ -27,15 +27,29 @@ def coap_get(mote):
 
 
 # read the information about the board status
-for i in motes_in_mesh:
-	p = coap_get(i)
-	print ''.join([chr(b) for b in p])
+#for i in motes_in_mesh:
+	#p = coap_get(i)
+	#print ''.join([chr(b) for b in p])
 
 # toggle debug LED
+pay_load = [ord('2'), ord('3')]
+print pay_load
+
+addr = 'coap://[{0}]/rt'.format(MOTE_IP_BASE + str(2))
+
+
 #p = c.PUT(
-#    'coap://[{0}]/rt'.format(MOTE_IP),
-#    payload = [ord('2')],
+#    'coap://[{0}]/rt'.format(MOTE_IP_BASE + str(2)),
+#    payload = pay_load
 #)
 
+#print p
+
+p = coap_get(2)
+print p
+print ''.join([chr(b) for b in p])
+
+
+c.close()
 
 raw_input("Done. Press enter to close.")

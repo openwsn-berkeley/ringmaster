@@ -5,8 +5,8 @@ ACTION_PERFORMED = 3
 FORWARD_MSG = 4
 
 #action
-BLINK = 10
-BUZZ = 11
+BLINK = 8
+BUZZ = 9
 
 #IP values
 UDP_IP = "localhost"
