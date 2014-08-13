@@ -19,19 +19,21 @@ class Client:
         self.COAP_PORT = self_port
         self.MOTE_PORT = self_port + 5000
         self.MESSAGE = "Mote " + str(self.MOTE_PORT) + " online"
+        self.coap_get()
  
 
     def initialize(self):
         self.sock = socket.socket(socket.AF_INET, # Internet
                              socket.SOCK_DGRAM) # UDP
-        self.sock.bind((const.UDP_IP, self.MOTE_PORT))
 
         self.print_intro()
 
         self.discover_ringmaster()
 
         while True:
+            self.sock.bind((const.UDP_IP, self.MOTE_PORT))
             data, addr = self.sock.recvfrom(1024) #buffer size is 1024 bytes
+            self.sock.close()
             print_packet(data, "Received:")
             self.handle_mssg(data)
 
@@ -52,6 +54,7 @@ class Client:
                 self.discovered = True
         self.sync_with_coap()
 
+    #get coap to proper start position (for GETs only)
     def sync_with_coap(self):
         coap_result = self.coap_get()
         while (int(coap_result[0]) != 0):
@@ -63,25 +66,27 @@ class Client:
 
     def wait_for_response(self, time = 5):
         try:
+            self.sock.bind((const.UDP_IP, self.MOTE_PORT))
             self.sock.settimeout(time)
             data, addr = self.sock.recvfrom(1024)
             self.sock.settimeout(None) #set timeout back to inf
             return data
         except Exception, e:
             print "No response from ringmaster after " + str(time) + " seconds"
+            self.sock.close()
             return None
 
     def handle_mssg(self, data):
         recvd_mssg = int(data.split(',')[0])
         from_mote = int(data.split(',')[1])
         if (recvd_mssg == const.FORWARD_MSG):
-            if (self.does_coap_get_match() == 2):
+            if (self.does_coap_get_match(2)):
                 to_mote = int(data.split(',')[2])
                 action = int(data.split(',')[3])
                 mssg = create_mssg_packet(action, self.MOTE_PORT, to_mote)
                 send_message_to_mote(to_mote, mssg)
         elif (recvd_mssg == const.BLINK or recvd_mssg == const.BUZZ):
-            if (self.does_coap_get_match() == 1):
+            if (self.does_coap_get_match(1)):
 
                 self.perform_action(recvd_mssg)
 
@@ -94,7 +99,7 @@ class Client:
             print "I'm buzzing!"
 
     def does_coap_get_match(self, action):
-        coap_result = coap_get()
+        coap_result = self.coap_get()
         if (int(coap_result[0]) == action):
             return True;
         else:
@@ -102,11 +107,15 @@ class Client:
 
     def coap_get(self):
         MOTE_IP_BASE = 'bbbb::1415:92cc:0:' #primary IP address
+        mote_ip = MOTE_IP_BASE + str(self.COAP_PORT)
+        print mote_ip
         c = coap.coap()
         
-        mote_ip = MOTE_IP_BASE + str(self.COAP_PORT)
         p = c.GET('coap://[{0}]/rt'.format(mote_ip))
-        return ''.join([chr(b) for b in p])
+        c.close()
+        ret_str = ''.join([chr(b) for b in p])
+        print ret_str
+        return ret_str
 
 def main(self_port):
     client = Client(self_port)

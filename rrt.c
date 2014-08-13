@@ -40,6 +40,8 @@ uint8_t *  getIPFromPayload(
 	int      ip_to_get 
 );
 
+void rotateState();
+
 //=========================== public ==========================================
 
 /**
@@ -75,6 +77,8 @@ void rrt_init() {
 
 \return Whether the response is prepared successfully.
 */
+
+uint8_t STATE = 0;
 owerror_t rrt_receive(
       OpenQueueEntry_t* msg,
       coap_header_iht* coap_header,
@@ -85,6 +89,7 @@ owerror_t rrt_receive(
    
    switch (coap_header->Code) {
       case COAP_CODE_REQ_GET:
+         rotateState();
          
          //=== reset packet payload (we will reuse this packetBuffer)
          msg->payload                     = &(msg->packet[127]);
@@ -92,13 +97,14 @@ owerror_t rrt_receive(
          
          //=== prepare  CoAP response
          
-				 //ip from
+	    //ip from
          packetfunctions_reserveHeaderSize(msg,4);
-         msg->payload[0] = 'f';
-         msg->payload[1] = 'r';
-         msg->payload[2] = 'o';
-         msg->payload[3] = 'm';
+         msg->payload[0] = '0' + STATE;
+         msg->payload[1] = 'f';
+         msg->payload[2] = 'f';
+         msg->payload[3] = 'f';
 
+         /*
 				 //ip to
          packetfunctions_reserveHeaderSize(msg,1);
          msg->payload[0] = '\n';
@@ -110,7 +116,7 @@ owerror_t rrt_receive(
 				 //message
          packetfunctions_reserveHeaderSize(msg,1);
          msg->payload[0] = 'm';
-
+    */
          // payload marker
          packetfunctions_reserveHeaderSize(msg,1);
          msg->payload[0] = COAP_PAYLOAD_MARKER;
@@ -128,13 +134,17 @@ owerror_t rrt_receive(
 				 msg->length											= 0;
 
 				 packetfunctions_reserveHeaderSize(msg, 4);
-				 msg->payload[0]									= COAP_PAYLOAD_MARKER;
+				 msg->payload[0] = 'y';
 				 msg->payload[1] = 'x';
 				 msg->payload[2] = tmp_payload[0];
 				 msg->payload[3] = tmp_payload[1];
 
-         // set the CoAP header
-         coap_header->Code                = COAP_CODE_RESP_CHANGED;
+                 // payload marker
+                 packetfunctions_reserveHeaderSize(msg,1);
+                 msg->payload[0] = COAP_PAYLOAD_MARKER;
+
+                 // set the CoAP header
+                 coap_header->Code                = COAP_CODE_RESP_CONTENT;
 
 				 outcome													= E_SUCCESS;
 				 break;
@@ -144,6 +154,25 @@ owerror_t rrt_receive(
    }
    
    return outcome;
+}
+
+//add more states as needed
+void rotateState() {
+   switch(STATE) {
+        case 0:
+            STATE = 1;
+            break;
+        case 1:
+            STATE = 2;
+            break;
+        case 2:
+            STATE = 0;
+            break;
+        default:
+            STATE = 0;
+            break;
+   } 
+
 }
 
 uint8_t * getIPFromPayload(uint8_t* payload, int msg) {
