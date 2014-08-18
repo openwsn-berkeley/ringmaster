@@ -26,14 +26,15 @@ class Client:
         self.sock = socket.socket(socket.AF_INET, # Internet
                              socket.SOCK_DGRAM) # UDP
 
+        self.sock.bind((const.UDP_IP, self.MOTE_PORT))
+        self.sock.settimeout(None)
+
         self.print_intro()
 
         self.discover_ringmaster()
 
         while True:
-            self.sock.bind((const.UDP_IP, self.MOTE_PORT))
             data, addr = self.sock.recvfrom(1024) #buffer size is 1024 bytes
-            self.sock.close()
             print_packet(data, "Received:")
             self.handle_mssg(data)
 
@@ -64,16 +65,13 @@ class Client:
 
 
 
-    def wait_for_response(self, time = 5):
+    def wait_for_response(self, time = None):
         try:
-            self.sock.bind((const.UDP_IP, self.MOTE_PORT))
-            self.sock.settimeout(time)
             data, addr = self.sock.recvfrom(1024)
-            self.sock.settimeout(None) #set timeout back to inf
+            self.sock.settimeout(time) #set timeout back to inf
             return data
         except Exception, e:
             print "No response from ringmaster after " + str(time) + " seconds"
-            self.sock.close()
             return None
 
     def handle_mssg(self, data):

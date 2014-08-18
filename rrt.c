@@ -93,8 +93,6 @@ owerror_t rrt_receive(
       case COAP_CODE_REQ_GET:
          rotateState(&rrt_vars.STATE);
          
-
-         
          //=== reset packet payload (we will reuse this packetBuffer)
          msg->payload                     = &(msg->packet[127]);
          msg->length                      = 0;
