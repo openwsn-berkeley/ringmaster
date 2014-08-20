@@ -87,6 +87,7 @@ owerror_t rrt_receive(
       coap_option_iht* coap_options
    ) {
    
+   OpenQueueEntry_t* pkt;
    owerror_t outcome;
    
    switch (coap_header->Code) {
@@ -106,19 +107,6 @@ owerror_t rrt_receive(
          msg->payload[2] = 'f';
          msg->payload[3] = 'f';
 
-         /*
-				 //ip to
-         packetfunctions_reserveHeaderSize(msg,1);
-         msg->payload[0] = '\n';
-
-				 //ip next destination
-         packetfunctions_reserveHeaderSize(msg,1);
-         msg->payload[0] = 'd';
-
-				 //message
-         packetfunctions_reserveHeaderSize(msg,1);
-         msg->payload[0] = 'm';
-    */
          // payload marker
          packetfunctions_reserveHeaderSize(msg,1);
          msg->payload[0] = COAP_PAYLOAD_MARKER;
@@ -130,7 +118,7 @@ owerror_t rrt_receive(
          break;
 			case COAP_CODE_REQ_PUT:
 			case COAP_CODE_REQ_POST:
-				 tmp_payload = getIPFromPayload(msg->payload, COAP_GET_TO_IP);
+				 tmp_payload = getIPFromPayload(msg->packet, COAP_GET_FROM_IP);
 
 				 msg->payload 										= &(msg->packet[127]);
 				 msg->length											= 0;
@@ -140,6 +128,31 @@ owerror_t rrt_receive(
 				 msg->payload[1] = 'x';
 				 msg->payload[2] = tmp_payload[0];
 				 msg->payload[3] = tmp_payload[1];
+				 msg->payload[4] = tmp_payload[2];
+				 msg->payload[5] = tmp_payload[3];
+				 msg->payload[6] = tmp_payload[4];
+				 msg->payload[7] = tmp_payload[5];
+				 msg->payload[8] = tmp_payload[6];
+				 msg->payload[9] = tmp_payload[7];
+
+                 //SEND CODE HERE
+                 pkt->creator   = COMPONENT_RRT;
+                 pkt-owner      = COMPONENT_RRT;
+
+                 packetfunctions_reserveHeaderSize(pkt, PAYLOADLEN);
+                 for (i=0; i<PAYLOADLEN; i++) {
+                    pkt->payload[i] = i;
+                 }
+                 //metada
+                 pkt->l4_destination_port   = WKP_UDP_COAP; //5683
+                 pkt->l3_destinationAdd.addr_128b[0],&ipAddr_motesEecs, 16);
+                 //send
+                 outcome = opencoap_send(pkt,
+                                         COAP_TYPE_NON,
+                                         COAP_CODE_REQ_PUT,
+                                         numOptions,
+                                         &rex_vars.desc) //change port dest here?
+                 //END
 
                  // payload marker
                  packetfunctions_reserveHeaderSize(msg,1);
