@@ -121,7 +121,7 @@ owerror_t rrt_receive(
           msg->payload 										= &(msg->packet[127]);
           msg->length											= 0;
 
-          packetfunctions_reserveHeaderSize(msg, 5);
+          packetfunctions_reserveHeaderSize(msg, 4);
           msg->payload[0] = 'x';
           msg->payload[1] = tmp_payload[0];
           msg->payload[2] = tmp_payload[1];
@@ -178,7 +178,7 @@ owerror_t rrt_receive(
           msg->payload[0] = COAP_PAYLOAD_MARKER;
 
           // set the CoAP header
-          coap_header->Code                = COAP_CODE_RESP_CHANGED;
+          coap_header->Code                = COAP_CODE_RESP_CONTENT;
 
           outcome													= E_SUCCESS;
           break;
