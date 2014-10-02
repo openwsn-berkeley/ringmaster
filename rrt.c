@@ -16,6 +16,8 @@
 
 const uint8_t rrt_path0[] = "rt";
 
+#define PAYLOADLEN 62
+
 //=========================== variables =======================================
 
 rrt_vars_t rrt_vars;

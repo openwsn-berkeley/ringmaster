@@ -15,7 +15,12 @@ MOTE_IP_BASE = 'bbbb::1415:92cc:0:' #primary IP address
 def coap_get(mote):
     c = coap.coap()
     mote_ip = MOTE_IP_BASE + str(mote)
-    p = c.GET('coap://[{0}]/rt'.format(mote_ip))
+
+    p = c.PUT('coap://[{0}]/rt'.format(mote_ip),
+                payload = [ord('2'), ord('3')]
+                
+            )
+
     c.close()
 
     return p
@@ -23,10 +28,10 @@ def coap_get(mote):
 
 p = coap_get(mote)
 print p
-print ''.join([chr(b) for b in p])
+#print ''.join([chr(b) for b in p])
 
-p = coap_get(mote)
-print p
-print ''.join([chr(b) for b in p])
+#p = coap_get(mote)
+#print p
+#print ''.join([chr(b) for b in p])
 
 raw_input("Done. Press enter to close.")

@@ -35,19 +35,19 @@ def coap_get(mote):
 pay_load = [ord('2'), ord('3')]
 print pay_load
 
-addr = 'coap://[{0}]/rt'.format(MOTE_IP_BASE + str(2))
+addr = 'coap://[{0}]/i'.format(MOTE_IP_BASE + str(2))
 
 
-#p = c.PUT(
-#    'coap://[{0}]/rt'.format(MOTE_IP_BASE + str(2)),
-#    payload = pay_load
-#)
+print "running put"
+p = c.PUT(
+    'coap://[{0}]/rt'.format(MOTE_IP_BASE + str(2)),
+    payload = pay_load
+)
 
-#print p
 
-p = coap_get(2)
+#p = coap_get(2)
 print p
-print ''.join([chr(b) for b in p])
+#print ''.join([chr(b) for b in p])
 
 
 c.close()
