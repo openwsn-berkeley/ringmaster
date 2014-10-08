@@ -47,7 +47,6 @@ def sendConfrmToMote(mote):
     sendMsgWithThread(mote, 'C')
 
 def registerMote(mote):
-    mote = int(mote)
     if (mote not in all_motes):
         all_motes.append(mote)
 
@@ -64,7 +63,7 @@ def requestAction():
     if (waiting_for_response == False):
         waiting_for_response = True
         waiting_for_response_from = all_motes[current_mote_idx]
-        return sendMsgWithThread(waiting_for_response_from, 'B')
+        sendMsgWithThread(waiting_for_response_from, 'B')
 
 
 def advance_mote_pointer():
@@ -76,24 +75,25 @@ def advance_mote_pointer():
 def forward_mote(from_mote):
     global waiting_for_response
     global waiting_for_response_from
+    print str(waiting_for_response)
+    print str(waiting_for_response_from)
+    print from_mote
     if (waiting_for_response == True and from_mote == waiting_for_response_from):
         #means we got the right packet
         advance_mote_pointer()
         waiting_for_response_from = all_motes[current_mote_idx]
         new_mssg = "F" + str(waiting_for_response_from) + ACTION #format - F2B - forward to 2 blink
-        resp = sendMsgWithThread(from_mote, new_mssg)
-        return resp
+        sendMsgWithThread(from_mote, new_mssg)
 
 def handle_incoming_packet(recvd_mssg, from_mote):
-    resp = None
     if (recvd_mssg == 'D'):
         sendConfrmToMote(from_mote)
         registerMote(from_mote)
-        resp = requestAction()
+        requestAction()
     if (recvd_mssg == ACTION): #mean ACTION was performed
-        resp = forward_mote(from_mote)
+        print "acion recvd"
+        forward_mote(from_mote)
 
-    return resp
         
 
 def initialize():
