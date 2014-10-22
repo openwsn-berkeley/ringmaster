@@ -29,18 +29,18 @@ def sendMsgToMote(mote, msg):
     print "PUTting " + msg + " to mote " + str(mote)
     p = c.PUT('coap://[{0}]/rt'.format(mote_ip), 
             payload = payload,
-            confirmable = False)
-    print "printing response"
-    print ''.join([chr(b) for b in p])
+            confirmable = True)
     c.close()
     return p
 
 def sendMsgWithThread(mote, msg):
+    sendMsgToMote(mote, msg)
+    '''
     t = multiprocessing.Process(target=sendMsgToMote, args=(mote, msg))
     t.start()
     time.sleep(1)
     t.terminate()
-    
+    '''
 
 def sendConfrmToMote(mote):
     print "Sending confirmation to " + mote
@@ -75,9 +75,6 @@ def advance_mote_pointer():
 def forward_mote(from_mote):
     global waiting_for_response
     global waiting_for_response_from
-    print str(waiting_for_response)
-    print str(waiting_for_response_from)
-    print from_mote
     if (waiting_for_response == True and from_mote == waiting_for_response_from):
         #means we got the right packet
         advance_mote_pointer()

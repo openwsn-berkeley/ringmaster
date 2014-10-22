@@ -16,7 +16,7 @@ def coap_get(mote, conf = True):
     c = coap.coap()
     mote_ip = MOTE_IP_BASE + str(mote)
 
-    p = c.GET('coap://[{0}]/l'.format(mote_ip),
+    p = c.GET('coap://[{0}]/rt'.format(mote_ip),
             confirmable=conf
             )
 
@@ -64,7 +64,7 @@ coap_put(mote)
 
 #coap_post(mote)
 
-#coap_get(mote, False)
+coap_get(mote, False)
 
 coap_put(mote, False)
 
