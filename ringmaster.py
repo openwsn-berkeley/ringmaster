@@ -1,140 +1,112 @@
-import socket
-import const
-from utils import send_message_to_mote, create_mssg_packet, print_packet, split_packet, debug
+import socket, select
+import sys
+import os
+import time
 
-class Ringmaster:
-    all_motes = []
-    mote_flags = []
-    last_mssg_sent = None
-    expecting_response_from = None
-    pointer = -1 #pointer to current mote
+here = sys.path[0]
+sys.path.insert(0,os.path.join(here,'..','coap'))
 
-    action = None
+from coap import coap, coapUtils
 
-    def __init__(self, action=const.BLINK):
-        self.action = action
-        self.all_motes = []
-        self.mote_flags = []
-        self.last_mssg_sent = None
-        self.expecting_response_from = None
-        self.pointer = -1
+PORT = int(sys.argv[1])
+ACTION = 'B' #for now stick to one action - blink
+CONFIRMATION = 'C'
 
-    def handle_incoming_packet(self,packet):
-        split_mssg = split_packet(packet)
-        mssgtype = int(split_mssg[0])
-        from_mote = int(split_mssg[1])
+all_motes = []
+current_mote_idx = -1
+waiting_for_response = False
+waiting_for_response_from = -1
 
-        if (mssgtype == const.DISCOVERY):
-            self.handle_discovery(from_mote)
-        elif (mssgtype == const.ACTION_PERFORMED):
-            if (from_mote == self.expecting_response_from):
-                self.reset_mote_flag(from_mote)
-                self.advance_pointer()
-                next_mote = self.all_motes[self.pointer]
-                self.expecting_response_from = next_mote
-                self.last_mssg_sent = create_mssg_packet(const.FORWARD_MSG, const.RINGMASTER_PORT, next_mote, self.action)
-                send_message_to_mote(from_mote,self.last_mssg_sent)
-            else: #unexpected packet received
-                print "unexpected packet received from mote: " + str(from_mote) + " with message " + str(mssgtype) + ", expecting from: " + str(self.expecting_response_from)
+def sendMsgToMote(ipv6ip_mote, msg, mote_to_fwd_to_addr=None):
+    c = coap.coap()
+    payload = []
+    for ch in msg:
+        payload.append(ord(ch))
 
-    def advance_pointer(self):
-        if (len(self.all_motes) == 0):
-            self.pointer = -1
-        else:
-            self.pointer += 1
-            if (self.pointer >= len(self.all_motes)):
-                self.pointer = 0
+    if mote_to_fwd_to_addr is not None:
+        for ipByte in ipv6ToHexArray(mote_to_fwd_to_addr):
+            payload.append(ipByte)
 
-    def handle_discovery(self,from_mote):
-        if from_mote in self.all_motes:
-            self.confirm_discovery(from_mote)
-            self.reset_mote_flag(from_mote)
-        else:
-            self.all_motes.append(from_mote)
-            self.mote_flags.append(0) 
-            print self.all_motes
-            self.confirm_discovery(from_mote)
-            if len(self.all_motes) == 1: #means this was the first mote
-                self.pointer = 0 #set pointer to first element in mote list
-                self.send_instruction(from_mote)
+    print "PUTting " + msg + " to mote " + str(ipv6ip_mote)
+    p = c.PUT('coap://[{0}]/rt'.format(ipv6ip_mote), 
+            payload = payload,
+            confirmable = True)
+    c.close()
+    return p
 
-    def reset_mote_flag(self,mote):
-        self.mote_flags[self.all_motes.index(mote)] = 0
+def sendConfrmToMote(mote):
+    print "Sending confirmation to " + mote
+    sendMsgToMote(mote, CONFIRMATION)
 
-    def increase_mote_flag(self,mote):
-        debug("increasing mote " + str(mote))
-        self.mote_flags[self.all_motes.index(mote)] += 1
-     
-    def get_mote_flag(self,mote):
-        return self.mote_flags[self.all_motes.index(mote)]
+def registerMote(mote):
+    if (mote not in all_motes):
+        all_motes.append(mote)
 
-    def purge_mote(self,mote):
-        print "purging mote " + str(mote)
-        mote_idx = self.all_motes.index(mote)
-        del self.all_motes[mote_idx]
-        del self.mote_flags[mote_idx]
+def requestAction():
+    global current_mote_idx
+    global waiting_for_response
+    global waiting_for_response_from
+    if (len(all_motes) <= 0):
+        return
+    
+    if (current_mote_idx < 0):
+        current_mote_idx = 0
+    
+    if (waiting_for_response == False):
+        waiting_for_response = True
+        waiting_for_response_from = all_motes[current_mote_idx]
+        sendMsgToMote(waiting_for_response_from, ACTION)
 
-    def send_action_instruction(self,mote_port):
-        self.last_mssg_sent = create_mssg_packet(self.action, const.RINGMASTER_PORT, mote_port)
 
-    def confirm_discovery(self,from_mote):
-        #do not save to the last message
-        mssg = create_mssg_packet(const.CONFIRM_DISCOVERY, const.RINGMASTER_PORT, from_mote)
-        send_message_to_mote(from_mote, mssg)
+def advance_mote_pointer():
+    global current_mote_idx
+    current_mote_idx += 1
+    if (current_mote_idx >= len(all_motes)):
+        current_mote_idx = 0
+
+def forward_mote(from_mote):
+    global waiting_for_response
+    global waiting_for_response_from
+    if (waiting_for_response == True and from_mote == waiting_for_response_from):
+        #means we got the right packet
+        advance_mote_pointer()
+        waiting_for_response_from = all_motes[current_mote_idx]
+        new_mssg = "F" + ACTION #format - FB[ipv6] - forward to [ipv6] to blink
+        sendMsgToMote(from_mote, new_mssg, waiting_for_response_from)
+
+def handle_incoming_packet(recvd_mssg, from_mote):
+    if (recvd_mssg == 'D'):
+        sendConfrmToMote(from_mote)
+        registerMote(from_mote)
+        requestAction()
+    if (recvd_mssg == ACTION): #mean ACTION was performed
+        print "acion recvd"
+        forward_mote(from_mote)
+
         
-    def send_instruction(self,mote_port):
-        self.expecting_response_from = mote_port
-        self.last_mssg_sent = create_mssg_packet(self.action, const.RINGMASTER_PORT, mote_port)
-        send_message_to_mote(mote_port, self.last_mssg_sent)
 
-    def handle_packet_timeout(self):
-        if (self.last_mssg_sent == None):
-            return
+def initialize():
+    sock = socket.socket(socket.AF_INET6, # Internet
+                         socket.SOCK_DGRAM) # UDP
 
-        mssg_sent = int(self.last_mssg_sent.split(',')[0])
-        mote_to = int(self.last_mssg_sent.split(',')[2])
+    sock.bind(('bbbb::1', PORT))
+    sock.settimeout(None)
+    
+    resp = None
 
-        debug(self.last_mssg_sent)
+    while True:
+        time.sleep(3)
+        data, addr = sock.recvfrom(1024) #buffer size is 1024 bytes
+        from_mote = addr[0].split(':')[-1]
+        recvd_mssg = data[-1]
 
-        if (mote_to not in self.all_motes):
-            #TODO handle this case
-            return
-        
-        self.increase_mote_flag(mote_to)
-        debug(self.all_motes)
-        debug(self.mote_flags)
-        if (self.get_mote_flag(mote_to) > 1): #TODO make a constant?
-            self.purge_mote(mote_to)
-        
-        self.advance_pointer()
-        if (self.pointer == -1):
-            self.last_mssg_sent = None
-            print "no motes registered, waiting"
-        else:
-            next_mote = self.all_motes[self.pointer]
-            self.send_instruction(next_mote)
+        #ipv6from_addr = coapUtils.ipv6AddrString2Bytes(addr[0])
+        ipv6from_addr = addr[0]
 
-    def start_ringmaster(self):
-        sock = socket.socket(socket.AF_INET, # Internet
-                             socket.SOCK_DGRAM) # UDP
-        sock.bind((const.UDP_IP, const.RINGMASTER_PORT))
-        sock.settimeout(10) #timeout of 5 seconds, for now
+        handle_incoming_packet(recvd_mssg, ipv6from_addr)
 
-        while True:
-            try:
-                data, addr = sock.recvfrom(1024) # buffer size is 1024 bytes
-                print_packet(data, "Received:")
-                self.handle_incoming_packet(data)
-            except Exception, e:
-                print e
-                self.handle_packet_timeout()
+def ipv6ToHexArray(ipv6):
+    return coapUtils.ipv6AddrString2Bytes(ipv6)
+    
 
-
-def main():
-    r = Ringmaster()
-    r.start_ringmaster()
-
-if __name__ == "__main__":
-    main()
-
- 
+initialize()
