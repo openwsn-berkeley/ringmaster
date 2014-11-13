@@ -3,12 +3,25 @@ import sys
 import os
 import time
 
+'''
+fairly simple ringmaster client that runs in tandem with openwsn-fw code
+
+https://openwsn.atlassian.net/wiki/display/OW/Ring-of-Things
+
+author: Oleksiy Budilovsky, 2014
+'''
+
 here = sys.path[0]
 sys.path.insert(0,os.path.join(here,'..','coap'))
 
 from coap import coap, coapUtils
 
-PORT = int(sys.argv[1])
+if len(sys.argv) > 1: #if a port is passed, use it
+    PORT = int(sys.argv[1])
+else:
+    PORT = 15000 #default port, as defined in opendefs.h file on firmware side
+
+    
 ACTION = 'B' #for now stick to one action - blink
 CONFIRMATION = 'C'
 
