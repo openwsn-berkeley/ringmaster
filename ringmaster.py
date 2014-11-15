@@ -21,9 +21,10 @@ if len(sys.argv) > 1: #if a port is passed, use it
 else:
     PORT = 15000 #default port, as defined in opendefs.h file on firmware side
 
-    
-ACTION = 'B' #for now stick to one action - blink
+DISCOVERY = 'D'
 CONFIRMATION = 'C'
+ACTION = 'B' #for now stick to one action - blink
+FORWARD = 'F'
 
 all_motes = []
 current_mote_idx = -1
@@ -65,11 +66,10 @@ def requestAction():
     if (current_mote_idx < 0):
         current_mote_idx = 0
     
-    if (waiting_for_response == False):
+    if (waiting_for_response is False):
         waiting_for_response = True
         waiting_for_response_from = all_motes[current_mote_idx]
         sendMsgToMote(waiting_for_response_from, ACTION)
-
 
 def advance_mote_pointer():
     global current_mote_idx
@@ -80,15 +80,15 @@ def advance_mote_pointer():
 def forward_mote(from_mote):
     global waiting_for_response
     global waiting_for_response_from
-    if (waiting_for_response == True and from_mote == waiting_for_response_from):
+    if (waiting_for_response and from_mote == waiting_for_response_from):
         #means we got the right packet
         advance_mote_pointer()
         waiting_for_response_from = all_motes[current_mote_idx]
-        new_mssg = "F" + ACTION #format - FB[ipv6] - forward to [ipv6] to blink
+        new_mssg = FORWARD + ACTION #format - FB[ipv6] - forward to [ipv6] to blink
         sendMsgToMote(from_mote, new_mssg, waiting_for_response_from)
 
 def handle_incoming_packet(recvd_mssg, from_mote):
-    if (recvd_mssg == 'D'):
+    if (recvd_mssg == DISCOVERY):
         sendConfrmToMote(from_mote)
         registerMote(from_mote)
         requestAction()
@@ -96,21 +96,16 @@ def handle_incoming_packet(recvd_mssg, from_mote):
         print "acion recvd"
         forward_mote(from_mote)
 
-        
-
 def initialize():
     sock = socket.socket(socket.AF_INET6, # Internet
                          socket.SOCK_DGRAM) # UDP
 
-    sock.bind(('bbbb::1', PORT))
+    sock.bind(('bbbb::1', PORT)) #ipv6 localhost port
     sock.settimeout(None)
     
-    resp = None
-
     while True:
         time.sleep(3)
         data, addr = sock.recvfrom(1024) #buffer size is 1024 bytes
-        from_mote = addr[0].split(':')[-1]
         recvd_mssg = data[-1]
 
         #ipv6from_addr = coapUtils.ipv6AddrString2Bytes(addr[0])
@@ -118,8 +113,8 @@ def initialize():
 
         handle_incoming_packet(recvd_mssg, ipv6from_addr)
 
+#convert ipv6 address to corresponding byte array
 def ipv6ToHexArray(ipv6):
     return coapUtils.ipv6AddrString2Bytes(ipv6)
     
-
 initialize()
